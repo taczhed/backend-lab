@@ -1,0 +1,22 @@
+﻿@HostAddress = https://localhost:4200
+
+DELETE {{HostAddress}}/
+
+###
+
+PATCH {{HostAddress}}/
+
+###
+
+POST {{HostAddress}}/
+
+###
+
+PUT {{HostAddress}}/
+
+###
+
+@id=string
+GET {{HostAddress}}/{{id}}
+
+###

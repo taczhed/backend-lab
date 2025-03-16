@@ -1,48 +1,30 @@
-using System.Text;
+using backend_lab.Models;
 
-var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-{
-    EnvironmentName = Environments.Production
-});
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-app.MapGet("/people/", () => "A list of people");
-app.MapGet("/people/{email:alpha}", (string email) => $"A single person with email {email}");
-app.MapGet("/people/{age:range(0,100)}", (int age) => $"A list of people having {age} year(s)");
-app.MapPut("/people/{email}", (string email) => $"Adding a person with email {email}");
+app.UseSwagger();
+app.UseSwaggerUI();
 
-app.Use(async (context, next) =>
-{
-    var requestContent = new StringBuilder();
-    requestContent.Append("--- Request Info ---");
-    requestContent.Append($"method = {context.Request.Method.ToUpper()}");
-    requestContent.Append($"path = {context.Request.Path}");
-    requestContent.Append("-- Headers --");
+// Mock data
+List<User> users = new List<User>{ new User("1", "test@test.pl", "Test123!") };
+User GetUserById(string id) => users.SingleOrDefault((p) => p.Id == id);
+void AddUser() => users.Add(new User((users.Count() + 1).ToString(), "Test@test.pl", "Test123!"));
 
-    foreach ( var (headerKey, headerValue) in context.Request.Headers )
-    {
-        requestContent.AppendLine($"header = {headerKey}, value = {headerValue}");
-    }
+app.MapGet("/{id}", (string id) => GetUserById(id));
 
-    requestContent.Append("-- Body --");
-    context.Request.EnableBuffering();
-    var requestReader = new StreamReader(context.Request.Body);
-    var content = await requestReader.ReadToEndAsync();
-    requestContent.AppendLine($"body = {content}");
-    Console.Write(requestContent.ToString());
-    context.Request.Body.Position = 0;
-
-    await next();
+app.MapPost("/", () => {
+    AddUser();
+    return Results.Created(); 
 });
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapGet("/", () => "Hello Dev!");
-}
-else
-{
-    app.MapGet("/", () => "Hello Production!");
-}
+app.MapPut("/", () => { return Results.Created(); });
+app.MapPatch("/", () => { return Results.Ok(); });
+app.MapDelete("/", () => { return Results.NoContent(); });
 
-app.Run();
+app.Run("https://localhost:4200");
+//Swagger: https://localhost:4200/swagger/index.html
