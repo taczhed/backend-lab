@@ -2,11 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
 using Microsoft.Extensions.Logging;
+using Progress;
 
 namespace Server
 {
-    public class ProgressorService
+    public class ProgressorService : Progressor.ProgressorBase
     {
         private readonly ILogger _logger;
 
@@ -15,7 +18,7 @@ namespace Server
             _logger = loggerFactory.CreateLogger<ProgressorService>();
         }
 
-        public async Task RunHistory()
+        public override async Task RunHistory(Empty request, IServerStreamWriter<HistoryResponse> responseStream, ServerCallContext context)
         {
             var monarches = await File.ReadAllLinesAsync("Monarchs-of-England.txt");
 
@@ -35,12 +38,22 @@ namespace Server
                 var progress = (i + 1) / (double)monarches.Length;
                 var progressPercentage = progress * 100;
 
-                // TODO return the progress
+                // TODO: return the progress # done
+                await responseStream.WriteAsync(new HistoryResponse
+                {
+                    Progress = Convert.ToInt32(progressPercentage)
+                });
             }
 
             _logger.LogInformation("History complete. Returning {Count} monarchs.", processedMonarches.Count);
 
-            // TODO Send final result
+            // TODO Send final result # done
+            var historyResult = new HistoryResult();
+            historyResult.Items.AddRange(processedMonarches);
+            await responseStream.WriteAsync(new HistoryResponse
+            {
+                Result = historyResult
+            });
 
         }
     }
